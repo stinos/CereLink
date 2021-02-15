@@ -108,7 +108,20 @@ void SdkApp::OnPktGroup(const cbPKT_GROUP * const pkt)
     if (cbGetSampleGroupList(1, group, &length, list, m_nInstance) != cbRESULT_OK)
         return;
 
-    int rate = (int)(cbSdk_TICKS_PER_SECOND / double(period) );
+    //Try to get actual sampling rate.
+    //Normally this is an integer number. However we want to be very sure that,
+    //whatever happens, we return a correct rate.
+    //Too bad there's no way (?) to add error handling though, so just return.
+    if (cb_cfg_buffer_ptr[m_nIdx]->sysinfo.chid == 0)
+    {
+        return;
+    }
+    const double calcRate = cb_cfg_buffer_ptr[m_nIdx]->sysinfo.sysfreq / static_cast<double>(period);
+    if (std::abs(std::nearbyint(calcRate) - calcRate) > 0.00001)
+    {
+        return;
+    }
+    const uint16_t rate = static_cast<uint16_t>(calcRate);
 
     bool bOverFlow = false;
 
